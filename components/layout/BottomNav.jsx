@@ -14,8 +14,8 @@ const adminNavItems = [
 const customerNavItems = [
   { href: "/dashboard", label: "Home", icon: "🏠" },
   { href: "/workout", label: "Workout", icon: "💪" },
-  { href: "/attendance", label: "Attendance", icon: "📅" },
   { href: "/diet", label: "Diet", icon: "🥗" },
+  { href: "/knowledge", label: "Learn", icon: "📚" },
   { href: "/profile", label: "Profile", icon: "👤" },
 ];
 
@@ -32,7 +32,7 @@ export default function BottomNav({ role = "admin" }) {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center py-2 px-3 rounded-lg transition ${
+              className={`flex flex-col items-center py-2 px-3 rounded-lg transition relative ${
                 isActive ? "text-black" : "text-gray-400 hover:text-gray-600"
               }`}
             >
