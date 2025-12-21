@@ -3,12 +3,73 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import StatCard from "@/components/shared/StatCard";
 import Header from "@/components/layout/Header";
+
+// Mock data
+const mockStats = {
+  totalMembers: 256,
+  activeMembers: 198,
+  expiredMembers: 42,
+  inactiveMembers: 16,
+  todayAttendance: 45,
+  monthlyRevenue: 125000,
+  pendingDues: 15000,
+};
+
+const mockRecentActivity = [
+  {
+    id: 1,
+    type: "attendance",
+    text: "John Doe checked in",
+    time: "2 min ago",
+    icon: "🟢",
+  },
+  {
+    id: 2,
+    type: "payment",
+    text: "₹2,500 received from Jane",
+    time: "15 min ago",
+    icon: "💰",
+  },
+  {
+    id: 3,
+    type: "member",
+    text: "New member: Mike Johnson",
+    time: "1 hour ago",
+    icon: "🆕",
+  },
+  {
+    id: 4,
+    type: "attendance",
+    text: "Sarah Wilson checked out",
+    time: "1 hour ago",
+    icon: "🔴",
+  },
+  {
+    id: 5,
+    type: "payment",
+    text: "₹1,000 received from Tom",
+    time: "2 hours ago",
+    icon: "💰",
+  },
+];
+
+const mockTodayAttendance = [
+  { id: 1, name: "John Doe", checkIn: "06:30 AM", status: "active" },
+  { id: 2, name: "Jane Smith", checkIn: "07:15 AM", status: "active" },
+  { id: 3, name: "Mike Johnson", checkIn: "06:45 AM", status: "left" },
+];
+
+const mockPendingPayments = [
+  { id: 1, name: "Tom Brown", amount: 3000, dueDate: "Jan 20" },
+  { id: 2, name: "Emily Davis", amount: 2500, dueDate: "Jan 18" },
+  { id: 3, name: "Chris Lee", amount: 1500, dueDate: "Jan 22" },
+];
 
 export default function AdminDashboard() {
   const router = useRouter();
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -18,54 +79,102 @@ export default function AdminDashboard() {
         return;
       }
       setUser(data.user);
+      setLoading(false);
     };
     checkAuth();
   }, [router]);
 
-  if (!user) return null;
-
-  const stats = [
-    { title: "Total Members", value: "256", change: "+12%", icon: "👥" },
-    { title: "Active Today", value: "45", change: "+5%", icon: "🏃" },
-    { title: "Revenue", value: "₹1.2L", change: "+8%", icon: "💰" },
-    { title: "Pending Dues", value: "₹15K", change: "-3%", icon: "📋" },
-  ];
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      <Header title="Dashboard" />
+    <div className="min-h-screen bg-gray-50 pb-24">
+      <Header title="Dashboard" showBack={false} />
 
-      <main className="px-4 py-6">
-        {/* Welcome Section */}
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Welcome back! 👋</h2>
-          <p className="text-gray-500">Here's what's happening at your gym</p>
+      <main className="px-4 py-4 space-y-4">
+        {/* Welcome */}
+        <div>
+          <h2 className="text-xl font-bold text-gray-900">Welcome back! 👋</h2>
+          <p className="text-gray-500 text-sm">Here's your gym overview</p>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          {stats.map((stat, index) => (
-            <StatCard key={index} {...stat} />
-          ))}
+        {/* KPI Cards - Row 1 */}
+        <div className="grid grid-cols-2 gap-3">
+          <KPICard
+            title="Total Members"
+            value={mockStats.totalMembers}
+            icon="👥"
+            onClick={() => router.push("/members")}
+          />
+          <KPICard
+            title="Active"
+            value={mockStats.activeMembers}
+            icon="✅"
+            color="green"
+            onClick={() => router.push("/members?filter=active")}
+          />
+          <KPICard
+            title="Expired"
+            value={mockStats.expiredMembers}
+            icon="⚠️"
+            color="red"
+            onClick={() => router.push("/members?filter=expired")}
+          />
+          <KPICard
+            title="Today's Attendance"
+            value={mockStats.todayAttendance}
+            icon="📋"
+            color="blue"
+            onClick={() => router.push("/attendance")}
+          />
+        </div>
+
+        {/* Revenue Card */}
+        <div className="bg-gradient-to-br from-gray-900 to-gray-700 rounded-xl p-4 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-300 text-sm">Monthly Revenue</p>
+              <p className="text-2xl font-bold">
+                ₹{(mockStats.monthlyRevenue / 1000).toFixed(1)}K
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-gray-300 text-sm">Pending Dues</p>
+              <p className="text-xl font-semibold text-red-400">
+                ₹{(mockStats.pendingDues / 1000).toFixed(1)}K
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => router.push("/finance")}
+            className="mt-3 w-full py-2 bg-white/10 rounded-lg text-sm font-medium"
+          >
+            View Finance →
+          </button>
         </div>
 
         {/* Quick Actions */}
-        <div className="bg-white rounded-xl p-4 shadow-sm mb-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Quick Actions</h3>
-          <div className="grid grid-cols-4 gap-4">
+        <div className="bg-white rounded-xl p-4 shadow-sm">
+          <h3 className="font-semibold text-gray-900 mb-3">Quick Actions</h3>
+          <div className="grid grid-cols-4 gap-2">
             {[
-              { label: "Add Member", icon: "➕", href: "/members" },
-              { label: "Mark Attendance", icon: "✅", href: "/attendance" },
-              { label: "Collect Payment", icon: "💳", href: "/finance" },
-              { label: "View Reports", icon: "📊", href: "/analytics" },
-            ].map((action, index) => (
+              { label: "Add Member", icon: "➕", href: "/members/add" },
+              { label: "Attendance", icon: "✅", href: "/attendance" },
+              { label: "Payment", icon: "💳", href: "/finance" },
+              { label: "Reports", icon: "📊", href: "/analytics" },
+            ].map((action) => (
               <button
-                key={index}
+                key={action.label}
                 onClick={() => router.push(action.href)}
-                className="flex flex-col items-center p-3 rounded-lg hover:bg-gray-50 transition"
+                className="flex flex-col items-center p-2 rounded-lg hover:bg-gray-50"
               >
-                <span className="text-2xl mb-1">{action.icon}</span>
-                <span className="text-xs text-gray-600 text-center">
+                <span className="text-2xl">{action.icon}</span>
+                <span className="text-xs text-gray-600 mt-1">
                   {action.label}
                 </span>
               </button>
@@ -73,27 +182,87 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Recent Activity */}
-        <div className="bg-white rounded-xl p-4 shadow-sm">
-          <h3 className="font-semibold text-gray-900 mb-4">Recent Activity</h3>
-          <div className="space-y-3">
-            {[
-              { text: "John Doe checked in", time: "2 min ago", icon: "🟢" },
-              {
-                text: "Payment received from Jane",
-                time: "15 min ago",
-                icon: "💰",
-              },
-              { text: "New member registered", time: "1 hour ago", icon: "🆕" },
-              {
-                text: "Equipment maintenance due",
-                time: "2 hours ago",
-                icon: "🔧",
-              },
-            ].map((activity, index) => (
+        {/* Today's Attendance */}
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+            <h3 className="font-semibold text-gray-900">Today's Check-ins</h3>
+            <button
+              onClick={() => router.push("/attendance")}
+              className="text-sm text-blue-600"
+            >
+              View All
+            </button>
+          </div>
+          <div className="divide-y divide-gray-100">
+            {mockTodayAttendance.map((member) => (
               <div
-                key={index}
-                className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0"
+                key={member.id}
+                className="p-3 flex items-center justify-between"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-sm font-bold">
+                    {member.name.charAt(0)}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">
+                      {member.name}
+                    </p>
+                    <p className="text-xs text-gray-500">{member.checkIn}</p>
+                  </div>
+                </div>
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    member.status === "active" ? "bg-green-500" : "bg-gray-300"
+                  }`}
+                ></span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Pending Payments */}
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+            <h3 className="font-semibold text-gray-900">Pending Payments</h3>
+            <button
+              onClick={() => router.push("/finance")}
+              className="text-sm text-blue-600"
+            >
+              View All
+            </button>
+          </div>
+          <div className="divide-y divide-gray-100">
+            {mockPendingPayments.map((payment) => (
+              <div
+                key={payment.id}
+                className="p-3 flex items-center justify-between"
+              >
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    {payment.name}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Due: {payment.dueDate}
+                  </p>
+                </div>
+                <span className="text-sm font-semibold text-red-500">
+                  ₹{payment.amount}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Recent Activity */}
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div className="p-4 border-b border-gray-100">
+            <h3 className="font-semibold text-gray-900">Recent Activity</h3>
+          </div>
+          <div className="divide-y divide-gray-100">
+            {mockRecentActivity.map((activity) => (
+              <div
+                key={activity.id}
+                className="p-3 flex items-center justify-between"
               >
                 <div className="flex items-center gap-3">
                   <span>{activity.icon}</span>
@@ -106,5 +275,35 @@ export default function AdminDashboard() {
         </div>
       </main>
     </div>
+  );
+}
+
+// KPI Card Component
+function KPICard({ title, value, icon, color = "gray", onClick }) {
+  const colorClasses = {
+    gray: "bg-white",
+    green: "bg-green-50",
+    red: "bg-red-50",
+    blue: "bg-blue-50",
+  };
+
+  const valueColors = {
+    gray: "text-gray-900",
+    green: "text-green-600",
+    red: "text-red-600",
+    blue: "text-blue-600",
+  };
+
+  return (
+    <button
+      onClick={onClick}
+      className={`${colorClasses[color]} rounded-xl p-4 shadow-sm text-left w-full`}
+    >
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xl">{icon}</span>
+      </div>
+      <p className={`text-2xl font-bold ${valueColors[color]}`}>{value}</p>
+      <p className="text-xs text-gray-500">{title}</p>
+    </button>
   );
 }
